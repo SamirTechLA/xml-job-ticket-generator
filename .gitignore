@@ -1,0 +1,16 @@
+# Dependency directories
+node_modules/
+
+# Local environment variables containing credentials
+.env
+
+# Local upload / scratch folders
+uploads/
+scratch/
+*.log
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

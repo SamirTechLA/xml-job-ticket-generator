@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Easy OV JobTicket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <svg class="logo-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent); margin-right: 2px;">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        <h1>Easy OV JobTicket</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <!-- Theme Selector -->
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <label for="theme-select" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase;">Theme</label>
+          <select id="theme-select" onchange="changeTheme(this.value)" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 6px; width: auto; background: rgba(11, 12, 16, 0.6); border: 1px solid var(--border-color); color: var(--text-bright); outline: none; transition: var(--transition);">
+            <option value="dark">Dark Mode</option>
+            <option value="light">Light Mode</option>
+          </select>
+        </div>
+        <div class="db-status-badge" id="db-status">
+          <span class="status-indicator online"></span>
+          <span class="status-text">Postgres: Connected</span>
+        </div>
+        <!-- User Profile info -->
+        <div id="user-profile-header" style="display: flex; align-items: center; gap: 0.75rem; border-left: 1px solid var(--border-color); padding-left: 1rem;">
+          <span id="user-profile-display" style="font-size: 0.8rem; font-weight: 500; color: var(--text-bright);">👤 Guest</span>
+          <button type="button" class="btn-primary" id="btn-admin-panel" onclick="openAdminModal()" style="display: none; font-size: 0.75rem; padding: 0.25rem 0.6rem; height: auto;">Admin Panel</button>
+          <button type="button" class="btn-secondary" onclick="handleLogout()" style="padding: 0.25rem 0.6rem; font-size: 0.75rem; height: auto;" title="Logout">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace Grid -->
+    <main class="app-workspace">
+      <!-- Left Sidebar: Configuration Panel -->
+      <section class="workspace-card config-panel">
+        <div class="card-header">
+          <h2>Job Ticket Settings</h2>
+        </div>
+        <div class="card-body">
+          <!-- Configuration Profiles Manager -->
+          <div class="form-group" style="padding-bottom: 1rem; border-bottom: 1px dashed rgba(255, 255, 255, 0.08); margin-bottom: 1.25rem;">
+            <label>Settings Profile</label>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+              <select id="profile-select" style="flex: 1; padding: 0.4rem 0.6rem; font-size: 0.85rem; border-radius: 6px;" onchange="loadSelectedProfile()">
+                <option value="">-- Select a Profile --</option>
+              </select>
+              <button type="button" class="btn-delete-row" style="padding: 0.4rem 0.6rem; height: auto;" onclick="deleteSelectedProfile()" title="Delete Profile">×</button>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" id="new-profile-name" placeholder="New Profile Name" style="flex: 1; padding: 0.4rem 0.6rem; font-size: 0.85rem; border-radius: 6px;">
+              <button type="button" class="btn-add-row" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="saveCurrentProfile()">Save Profile</button>
+            </div>
+          </div>
+
+          <!-- Generation Mode -->
+          <div class="form-group">
+            <label>Output XML Mode</label>
+            <div class="toggle-switch-container">
+              <button type="button" class="mode-toggle-btn active" id="mode-individual" onclick="setMode('individual')">
+                Individual XMLs
+              </button>
+              <button type="button" class="mode-toggle-btn" id="mode-filelist" onclick="setMode('filelist')">
+                Filelist (Merged XML)
+              </button>
+            </div>
+            <p class="field-hint">Generate one XML for each file, or a single XML with all files.</p>
+          </div>
+
+          <!-- Assembly Line Reference (From DB) -->
+          <div class="form-group">
+            <label for="assembly-line-select">Assembly Line Reference (ACTIVE)</label>
+            <div class="custom-select-wrapper">
+              <select id="assembly-line-select">
+                <option value="" disabled selected>Loading active lines from DB...</option>
+              </select>
+            </div>
+            <p class="field-hint">Retrieved dynamically from Postgres workspace DB.</p>
+          </div>
+
+          <!-- Output Path / URI Prefix -->
+          <div class="form-group">
+            <label for="uri-prefix-input">Local Base Folder URI</label>
+            <input type="text" id="uri-prefix-input" value="file:///D:/OV_Folders/_DEMOS/Beispiele_Nachzuegler_Original">
+            <p class="field-hint">Base path used to construct the File URI in the XML.</p>
+          </div>
+
+          <!-- Main Property Name -->
+          <div class="form-group">
+            <label for="main-property-name-input">Main Property Name</label>
+            <input type="text" id="main-property-name-input" value="DLV">
+            <p class="field-hint">The value of the main &lt;Name&gt; tag inside the Property list.</p>
+          </div>
+
+          <!-- Job Name Template -->
+          <div class="form-group">
+             <label for="job-name-template-input">Job Name Template</label>
+            <input type="text" id="job-name-template-input" value="{mainPropName}-{entity}_TASK-{task}_EXEC-{date}">
+            <p class="field-hint">Format for &lt;Job Name="..."&gt;. Use placeholders: <code>{mainPropName}</code>, <code>{entity}</code>, <code>{task}</code>, <code>{date}</code>.</p>
+          </div>
+
+          <!-- Predefined Tasks Manager -->
+          <div class="form-group">
+            <div class="subprop-header-actions" style="margin-bottom: 0.5rem;">
+              <label>Predefined Tasks</label>
+              <button type="button" class="btn-add-row" onclick="addTaskRow()">+ Add Task</button>
+            </div>
+            <div id="tasks-list" class="subproperties-list-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 150px; overflow-y: auto; padding-right: 2px;"></div>
+            <p class="field-hint" style="margin-top: 0.4rem;">Add or remove tasks here. They will appear in the select task dropdowns in the files table.</p>
+          </div>
+
+          <!-- Custom SubProperties Options Manager -->
+          <div class="form-group">
+            <div class="subprop-header-actions" style="margin-bottom: 0.5rem;">
+              <label>Custom SubProperty Options</label>
+              <button type="button" class="btn-add-row" onclick="addCustomSubpropConfig()">+ Add Prop Config</button>
+            </div>
+            <div id="custom-subprop-configs" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 250px; overflow-y: auto; padding-right: 2px;"></div>
+            <p class="field-hint" style="margin-top: 0.4rem;">Define option lists of values for customized subproperties (e.g. SUB_AssemblyLine). Subproperties matching these names will render value dropdown selection lists.</p>
+          </div>
+
+          <!-- Date Picker -->
+          <div class="form-group">
+            <label for="exec-date-input">Execution Date</label>
+            <input type="date" id="exec-date-input">
+          </div>
+
+          <hr class="separator">
+
+          <!-- SubProperties (Dynamic Key-Value list) -->
+          <div class="form-group">
+            <div class="subprop-header-actions">
+              <label>Global SubProperties</label>
+              <button type="button" class="btn-text-action" onclick="addSubPropertyRow('', '')">+ Add Property</button>
+            </div>
+            <div class="subproperties-list" id="subproperties-list">
+              <!-- Dynamically populated, prefilled with SUB_AssemblyLine -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Center Panel: File Drop and Table Editor -->
+      <section class="workspace-card files-panel">
+        <div class="card-header">
+          <h2>Input Files</h2>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <span class="file-count-badge" id="file-count">0 Files</span>
+            <button type="button" class="btn-text-action" onclick="addCustomTableColumn()">+ Add Column</button>
+            <button type="button" class="btn-text-action" onclick="clearFilesList()" style="color: var(--error);">Clear List</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Dropzone -->
+          <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-content">
+              <span class="drop-icon">☁</span>
+              <h3>Drag & drop files here</h3>
+              <p>Supports multiple JPG, PNG, PDF, or other files. Filename metadata will be parsed automatically.</p>
+              <button type="button" class="btn-secondary" onclick="document.getElementById('file-input').click()">Browse Files</button>
+              <input type="file" id="file-input" multiple style="display: none;">
+            </div>
+          </div>
+
+          <!-- Table of uploaded files -->
+          <div class="files-table-container">
+            <table class="files-table" id="files-table">
+              <thead>
+                <tr id="files-table-header-row">
+                  <th width="40"><input type="checkbox" id="select-all-files" checked onchange="toggleSelectAllFiles(this.checked)"></th>
+                  <th>File Name</th>
+                  <th width="120">Entity Code</th>
+                  <th width="150">Task Name</th>
+                  <th width="200">Assembly Line</th>
+                  <th>Resolved File URI</th>
+                  <th width="60"></th>
+                </tr>
+              </thead>
+              <tbody id="files-table-body">
+                <!-- Dynamically populated rows -->
+                <tr class="empty-state-row">
+                  <td colspan="7">
+                    <div class="empty-table-state">
+                      <p>No files uploaded yet. Drag files or browse to begin.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: XML Code Preview and Operations -->
+      <section class="workspace-card preview-panel">
+        <div class="card-header">
+          <h2>Live XML Preview</h2>
+          <div class="tab-controls-container" id="xml-tabs">
+            <!-- Tabs for multiple XML previews will generate here -->
+          </div>
+        </div>
+        <div class="card-body xml-preview-body">
+          <div class="xml-preview-container">
+            <pre><code id="xml-preview-code">&lt;!-- Upload files to preview XML Job Ticket --&gt;</code></pre>
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="action-options-group">
+            <label class="checkbox-container">
+              <input type="checkbox" id="write-to-server-chk" checked>
+              <span class="checkmark"></span>
+              Write XML files directly to server disk
+            </label>
+            <input type="text" id="target-folder-input" class="sub-input" placeholder="Custom output path (optional)">
+          </div>
+          <div class="action-buttons-container">
+            <button type="button" class="btn-secondary" id="btn-copy" onclick="copyActiveXml()">Copy XML</button>
+            <button type="button" class="btn-secondary" id="btn-download" onclick="downloadSelectedXmls()">Download XML</button>
+            <button type="button" class="btn-primary" id="btn-generate" onclick="submitGenerate()">Generate Job Tickets</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Notification Toast -->
+    <div class="toast-container" id="toast-container"></div>
+  </div>
+
+  <!-- Fullscreen Login Overlay -->
+  <div id="login-overlay" style="display: none;">
+    <div class="login-card">
+      <div class="login-header">
+        <span class="login-logo">🔒</span>
+        <h2>Easy OV Generator</h2>
+        <p>Please log in to manage JDF Job Tickets</p>
+      </div>
+      <form id="login-form" onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label for="login-username">Username or Email</label>
+          <input type="text" id="login-username" required placeholder="Enter username or email" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div class="form-group" style="margin-top: 0.75rem;">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required placeholder="Enter password" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div id="login-error-msg" class="login-error" style="display: none;"></div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1.25rem; padding: 0.75rem;">Log In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Modal -->
+  <div id="admin-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content admin-card">
+      <div class="modal-header">
+        <h2>Admin Console - User Management</h2>
+        <button type="button" class="close-modal" onclick="closeAdminModal()">×</button>
+      </div>
+      <div class="modal-body" style="display: flex; gap: 2rem; flex-wrap: wrap; margin-top: 1.25rem;">
+        
+        <!-- Left side: User creation form -->
+        <div style="flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 1rem; padding-right: 2rem; border-right: 1px solid var(--border-color);">
+          <h3 style="margin-top: 0;">Register New User</h3>
+          <form id="create-user-form" onsubmit="handleCreateUserSubmit(event)" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="form-group">
+              <label for="create-username">Username</label>
+              <input type="text" id="create-username" required placeholder="e.g. jdoe" style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div class="form-group">
+              <label for="create-email">Email Address</label>
+              <input type="email" id="create-email" required placeholder="e.g. jdoe@example.com" style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div class="form-group">
+              <label for="create-password">Password</label>
+              <input type="password" id="create-password" required placeholder="Enter password" style="width: 100%; box-sizing: border-box;">
+            </div>
+            <div class="form-group">
+              <label for="create-role">User Role</label>
+              <select id="create-role" style="width: 100%; padding: 0.5rem; border-radius: 6px; background: rgba(11,12,16,0.8); border: 1px solid var(--border-color); color: var(--text-bright); outline: none; cursor: pointer;">
+                <option value="user">Standard User</option>
+                <option value="admin">Administrator</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 0.5rem; width: 100%;">Create Account</button>
+          </form>
+        </div>
+
+        <!-- Right side: Users table list -->
+        <div style="flex: 2; min-width: 350px; display: flex; flex-direction: column; gap: 1rem;">
+          <h3 style="margin-top: 0;">Active Accounts</h3>
+          <div style="max-height: 350px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; background: rgba(0,0,0,0.2);">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.8rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); background: rgba(255,255,255,0.02);">
+                  <th style="padding: 0.6rem 0.8rem;">Username</th>
+                  <th style="padding: 0.6rem 0.8rem;">Email</th>
+                  <th style="padding: 0.6rem 0.8rem;">Role</th>
+                  <th style="padding: 0.6rem 0.8rem; text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-list">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF.js library for rendering PDF page thumbnails client-side -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
