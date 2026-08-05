@@ -43,16 +43,19 @@ if (fs.existsSync(dotenvPath)) {
 const PORT = process.env.PORT || 3008;
 
 // Postgres Pool Setup
-const poolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'workspace',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASS || 'postgres'
-};
+const poolConfig = process.env.DATABASE_URL || process.env.DB_URL
+  ? { connectionString: process.env.DATABASE_URL || process.env.DB_URL }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'workspace',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASS || 'postgres'
+    };
 
 // Render and other public cloud database hosting require SSL connections
-if (process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true') {
+const isLocalDb = !poolConfig.connectionString && (poolConfig.host === 'localhost' || poolConfig.host === '127.0.0.1');
+if (!isLocalDb || process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true') {
   poolConfig.ssl = {
     rejectUnauthorized: false
   };
