@@ -1,10 +1,9 @@
-services:
-  # PostgreSQL database instance
-  - type: db
-    name: easy-ov-db
-    ipAllowList: [] # Allow only internal access from the web service for security
+databases:
+  - name: easy-ov-db
+    plan: free # Use Render's free tier database plan
+    ipAllowList: [] # Strict security: block public IP access, allow only internal services
 
-  # Node.js Express service
+services:
   - type: web
     name: easy-ov-jobticket
     env: node
@@ -16,24 +15,8 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        generateValue: true # Generates a secure random secret key automatically
-      - key: DB_HOST
+        generateValue: true # Generates a secure random JWT signature key automatically
+      - key: DATABASE_URL
         fromDatabase:
           name: easy-ov-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: easy-ov-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: easy-ov-db
-          property: database
-      - key: DB_USER
-        fromDatabase:
-          name: easy-ov-db
-          property: user
-      - key: DB_PASS
-        fromDatabase:
-          name: easy-ov-db
-          property: password
+          property: connectionString # Passes the secure internal PostgreSQL URL directly
