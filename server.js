@@ -66,7 +66,7 @@ const pool = new Pool(poolConfig);
 // Test connection and initialize database schema
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
-    console.error('PostgreSQL Database connection error:', err.message);
+    console.error('PostgreSQL Database connection error:', err);
   } else {
     console.log('PostgreSQL Database connected successfully. Server time:', res.rows[0].now);
     initDb();
@@ -270,8 +270,8 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Login error:', err.message);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('Login error:', err);
+    res.status(500).json({ success: false, error: err.message || err.toString() });
   }
 });
 
