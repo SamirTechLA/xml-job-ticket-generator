@@ -43,13 +43,22 @@ if (fs.existsSync(dotenvPath)) {
 const PORT = process.env.PORT || 3008;
 
 // Postgres Pool Setup
-const pool = new Pool({
+const poolConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME || 'workspace',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASS || 'postgres'
-});
+};
+
+// Render and other public cloud database hosting require SSL connections
+if (process.env.NODE_ENV === 'production' || process.env.DB_SSL === 'true') {
+  poolConfig.ssl = {
+    rejectUnauthorized: false
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 // Test connection and initialize database schema
 pool.query('SELECT NOW()', (err, res) => {
