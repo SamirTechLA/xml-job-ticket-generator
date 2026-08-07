@@ -4,7 +4,8 @@
   "description": "Interactive XML Job Ticket Generator for OneVision",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "tunnel": "npx localtunnel --port 3008"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
