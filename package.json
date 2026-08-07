@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "tunnel": "npx localtunnel --port 3008"
+    "tunnel": "npx localtunnel --port 3008",
+    "tunnel-ssh": "ssh -R 80:localhost:3008 nokey@localhost.run"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
